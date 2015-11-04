@@ -1,0 +1,443 @@
+%{
+\documentclass[11pt, twoside]{article}   	% use "amsart" instead of "article" for AMSLaTeX format
+\usepackage{geometry}                		% See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   		% ... or a4paper or a5paper or ... 
+%\geometry{landscape}                		% Activate for for rotated page geometry
+\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}				% Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+								% TeX will automatically convert eps --> pdf in pdflatex	
+\usepackage{amssymb}
+\usepackage{color}
+\usepackage{matlab-prettifier}
+\usepackage{verbatim}
+\usepackage{fancyvrb}
+\usepackage{multicol}
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage{bm}
+\usepackage[section]{placeins}
+\lstset{style=Matlab-editor,basicstyle=\ttfamily}
+
+\sloppy
+\definecolor{lightgray}{gray}{0.5}
+\newenvironment{matlab}{\comment}{\endcomment}
+\newenvironment{matlabv}{\lstlisting}{\endlstlisting}	
+
+
+\title{Homework \# 2 \\ Kernels}
+\author{Cody W. Eilar}
+%\date{}							% Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+
+
+\begin{matlab}
+%}
+close all; 
+clear all;
+
+fid = fopen('output_dir/computer.tex', 'w'); 
+fprintf(fid, computer); 
+fclose(fid); 
+
+fid = fopen('output_dir/matlabver.tex', 'w'); 
+a = ver('matlab'); 
+fprintf(fid, [a.Name ' version ' a.Version]); 
+fclose(fid); 
+%{
+\end{matlab}
+\section{Introduction} 
+By themselves, support vector machines are useful but only for the linearly separable case. There are many cases in which no single line can easily shatter the points 
+using a hyperplane. This is where the \textit{kernel trick} comes in handy. The kernel trick consists of transforming the input space into a high dimensional space in which a "linear"
+hyperplane can be drawn. This allows the \textit{xor} problem to be solved. In this lab, we will investigate how to solve the \textit{xor} problem using the kernel trick. 
+
+\section{Theory}
+Before delving into the kernel trick, it also helpful to look at what possibilities came before the kernel trick was discovered. This was known as a \textit{Volterra filter}, and this allowed
+the transformation of the input space into a polynomial function. Equation \ref{eq:volterra} illustrates what an order 3 Volterra filter.
+
+
+\begin{equation}
+\mathbf{z}_n = [1, x[n], x[n-1], x^2[n], x^2[n-1], x[n] x[n-1], x[n]^3, ...]^T
+\label{eq:volterra}
+\end{equation}
+
+From equation \ref{eq:volterra} we can then reformulate the problem as Equation \ref{eq:reform}.  The problem, however, with this approach is the \textit{the curse of dimensionality}.
+
+\begin{equation}
+\hat{y}[n] = \mathbf{w}^T\mathbf{z}_n
+\label{eq:reform}
+\end{equation}
+
+ In the order 3 Voltera filter, we see that in order to pass from a space of dimension 2, it requries $fact(5, 3) = 10$, but if the input space is in 5 dimensions, then we end up with 56 elements needed.
+ This is thus known as the curse of dimensionality. This now were the \textit{kernel trick} comes into play.  The transformation can be generalized by $\mathbf{z}_n = \mathbf{\varphi}(\mathbf{x}_n)$ 
+ which in turn allows us to rewrite the estimator function as shown in Equation \ref{eq:rewrite}. 
+ 
+ \begin{equation}
+\hat{y}[n] = \mathbf{w}^T\mathbf{\varphi}(\mathbf{x}_n) + b
+\label{eq:rewrite}
+\end{equation}
+
+In order to finally solve Equation \ref{eq:rewrite} we need to choose a function for $\varphi(\cdot)$, the higher dimensional Hilbert space \cite{kernelmethods}. In 
+the case of this assignment, we have chosen to use the minimum mean square error (MMSE) criterion and a Gaussian Kernel with $\sigma = 1$. The gaussian equation 
+used is shown in Equation \ref{eq:gaus_basis}.
+
+\begin{equation}
+\mathbf{\varphi(x)} = exp\bigg(\frac{||\mathbf{x} - \mathbf{x}^T||^2}{\sigma^2}\bigg)
+\label{eq:gaus_basis}
+\end{equation}
+
+From here, are given the optimizer which is shown in Equation \ref{eq:optimizer} 
+
+\begin{equation}
+\mathbf{\alpha} = (\mathbf{\widetilde{K}} + \gamma \mathbf{I})^{-1}\mathbf{y}
+\label{eq:optimizer}
+\end{equation}
+
+Where $\mathbf{\widetilde{K}} = \mathbf{K} + \mathbf{1}$ and $\mathbf{1}$ is an $N \times N$ matrix of ones. This is a direct result
+of building the bias into the Hilbert space $\mathbf{\varphi(\cdot)}$. We can show this in the following steps. 
+
+Let 
+\begin{align*}
+\mathbf{\widetilde{\varphi}(x)} &= [1, \varphi_1(\mathbf{x}),  \ldots, \varphi_N(\mathbf{x}), \ldots ] \\
+\langle\mathbf{\widetilde{\varphi}(x)}, \mathbf{\widetilde{w}} \rangle &= \mathbf{w}^T\mathbf{\varphi(\mathbf{x}}) + b 
+\end{align*}
+
+As a result, end up with the following definitions for $\mathbf{\widetilde{w}}$ and $\mathbf{\widetilde{\varphi}}$.
+\newcommand{\newPhi}{\mathbf{\widetilde{\varphi}}}
+
+\begin{align*}
+ \mathbf{\widetilde{w}} &= 
+\begin{bmatrix}
+b & \mathbf{w}  \\
+\end{bmatrix} \\
+\widetilde{\varphi} &= 
+\begin{bmatrix} 
+\mathbf{1}^T \\
+\mathbf{\varphi} \\
+\end{bmatrix}
+\end{align*}
+
+From here, we simply need to take the inner product of $\mathbf{\widetilde{\varphi}}$ to obtain $\mathbf{K}$. 
+\begin{align*}
+ \widetilde{\mathbf{K} }&= \langle \newPhi(\mathbf{x}_j), \newPhi(\mathbf{x}_i) \rangle \\
+ & = \newPhi^T\newPhi \\
+ &= [\mathbf{1}^T, \mathbf{\varphi}] 
+ \begin{bmatrix}
+ \mathbf{1}^T \\
+\mathbf{\varphi} \\
+ \end{bmatrix} \\
+ &= \mathbf{1}_{N \times N} + \mathbf{\varphi}^T\mathbf{\varphi}
+\end{align*}
+
+This then proves that in order to calculate the bias using the Hilbert space, we need to first
+build the bias into the $\varphi$ variable so that we don't have to treat the equation separately. 
+
+It is also interesting to look at why it is necessary to have $\mathbf{alpha} = (\mathbf{\widetilde{K}} - \gamma \mathbf{I})^{-1} \mathbf{y}$ 
+instead of $\mathbf{\widetilde{K}}^{-1}\mathbf{y}$. The reason for this is that we cannot guarantee that $\mathbf{\widetilde{K}}$ is well posed. 
+For example, if there are more points than dimensions, than there are an infinite number of $\mathbf{w}$ values from which to choose. On 
+the other hand, if there are many more points than dimensions then you can be rest assured that there is noise in the generation process 
+and if you attempt to choose an exact match $\mathbf{w}$ then you run the risk of over fitting the data and therefore there is a need for an 
+estimation criterion \cite{kernelmethods}. The process of developing these two constraints is called \emph{regularization} or \emph{ridge regression}. 
+The \emph{ridge regression} corresponds to solving the following equation: 
+
+
+
+\begin{align*}
+\underset{\mathbf{w}}{\text{min}} \mathbf{\mathcal{L}}_\lambda (\mathbf{w}, S) &= 
+\underset{\mathbf{w}}{\text{min}} \lambda ||\mathbf{w}||^2 + \sum_{i=1}^{l}(y_i - g(\mathbf{x}_i))^2
+\end{align*}
+
+Here, $\lambda$ represents the relative trade-off between the norm and the loss \cite{kernelmethods}. In order to find the minimum of this equation, 
+we need to take the derivative. 
+
+\begin{align*}
+\mathbf{X}^T\mathbf{X}\mathbf{w} + \lambda\mathbf{w} = (\mathbf{X}^T\mathbf{X} + \lambda \mathbf{I}_n)\mathbf{w} = \mathbf{X}^T\mathbf{y}
+\end{align*}
+
+Here, $\mathbf{X}$ is just the input space where each row is $\mathbf{x}_1, \ldots, \mathbf{x}_N$. We have, however, for this problem
+cast the input space into an infinite dimensional Hilbert space, so we end up with the following: 
+
+\begin{align*}
+\mathbf{\Phi}^T\mathbf{\Phi}\mathbf{w} + \lambda\mathbf{w} = (\mathbf{\Phi}^T\mathbf{\Phi} + \lambda \mathbf{I}_n)\mathbf{w} = \mathbf{\Phi}^T\mathbf{y}
+\end{align*}
+
+Then we can solve for $\mathbf{w}$: 
+\begin{align*}
+\mathbf{w} = \lambda^{-1} \mathbf{\Phi}^T (\mathbf{y} - \mathbf{\Phi} \mathbf{w}) = \mathbf{\Phi}\mathbf{\alpha}
+\end{align*}
+
+This is possible because we know that $\mathbf{w}$ can be written as a linear combination of the input space. And then finally we can solve
+for $\mathbf{\alpha}$.
+
+\begin{align*}
+\bm{\alpha} = \lambda^{-1}(\mathbf{y} - \mathbf{\Phi} \mathbf{w}) \\
+\mathbf{y} = (\mathbf{\Phi \Phi}^T + \lambda\mathbf{I}_N)\mathbf{\alpha}
+\end{align*}
+
+From here we can see that all we have to do is a substitution from our original equation in \ref{eq:optimizer} to see that
+$\lambda\bm{I}_N$ is just $\gamma\bm{I}_N$ which is used as a regularization parameter to minimize the complexity 
+of the system. 
+
+\section{Methodology and Experiments}
+Now that we have introduced some of the theory behind kernels and regressors, we can now begin to look at how to 
+actually implement them in software to get some experimental results. 
+In the first part of this section, we want to look at how well the SVM works using
+100 data points for training, and then 1000 points for testing. We will
+then validate the methods using \textit{MATLABS}'s v-fold function. The
+second part is to then investigate the double fibanacci spairal applying
+the same techniques as mentioned above. For all the results generated here
+we used \input{output_dir/computer} for the system running
+\input{output_dir/matlabver}.
+\subsection{XOR problem}
+We begin this section by first plotting the xor problem to illustrate that
+there is no clear way to separate the data in a linear way. 
+\begin{lstlisting}
+%}
+num_train_points = 100; 
+rng('default') 
+train_seed = rng(1); 
+[x_train, y_train] = generate_xor_data(num_train_points, train_seed);
+xor_plot = plot_xor_2d(x_train); 
+s = sprintf('Plot of XOR problem using %d points', num_train_points);
+title(s)
+saveas(xor_plot, 'figures/xor_plot.eps', 'epsc')
+%{
+\end{lstlisting}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4in]{figures/xor_plot.eps}
+\caption{XOR plot}
+\label{fig:xor_plot} 
+\end{figure}
+
+\FloatBarrier
+
+Now that we have our data, we can begin training our classifier using a
+radial basis kernel. 
+
+\begin{lstlisting}
+%}
+gamma = 2; 
+sigma = 1; 
+K=kernel_matrix('rbf',x_train,x_train,sigma)+1; 
+% Calculate the alphas from the dual parameters
+alpha=pinv(K+gamma*eye(size(K)))*y_train;
+%{
+\end{lstlisting}
+
+To see how well we are doing, we can plot the separating hyperplane. 
+\begin{lstlisting}
+%}
+[X1,X2] = meshgrid(min(x_train(:)):.05:max(x_train(:)), ...
+   min(x_train(:)):.05:max(x_train(:)));     % Costruct a grid of points for 
+                                          % representation of the data.
+xt=[X1(:) X2(:)]';                        % Vectorize it to use it in test 
+y_=alpha'*kernel_matrix('rbf', x_train, xt, sigma)+sum(alpha);    
+                                          % Test
+Z=buffer(y_,size(X1,1),0);                % convert the output vector into
+                              % Plot a contour over the data. 
+contour(X1,X2,Z,[0 0],'LineWidth',2,'Color','Black')
+title('Contour plot of the hyperplane using a radial basis kernel')
+saveas(xor_plot, 'figures/xor_contour_plot.eps', 'epsc')
+
+
+
+%{
+\end{lstlisting}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4in]{figures/xor_contour_plot.eps}
+\caption{Hyperplane seperation using a radial basis function}
+\label{fig:xor_contour_plot} 
+\end{figure}
+
+To put the algorithm to the test now, we need try it on some testing data
+and use cross validation to test its performance. In the following code
+snippet we will generate 1000 points that we will use for testing given our
+original parameters stored in $\bm{\alpha}$.
+
+\begin{lstlisting}
+%}
+%%
+kfold = 5; 
+num_train_points = 1000; 
+[x_train, y_train] = generate_xor_data(num_train_points, train_seed);
+indicies = crossvalind('Kfold', num_train_points, kfold); 
+% Classperf only works on non-negative numbers, hence the plus 1
+cp = classperf(y_train+1);
+for i = 1:kfold
+   test = (indicies == i); train = ~test;
+   K=kernel_matrix('rbf',x_train(:,train), x_train(:, train), sigma)+1; 
+   alpha=pinv(K+gamma*eye(size(K)))*y_train(train);
+   
+   y_ = alpha'*kernel_matrix('rbf', x_train(:,train), ...
+      x_train(:,test), sigma) + sum(alpha); 
+   y_ = sign(y_);
+   
+   % Function only works on non-negative numbers, hence the plus 1
+   classperf(cp, y_+1, test);
+end
+delete 'output_dir/classify_stats.txt'
+diary 'output_dir/classify_stats.txt'
+cp.display
+diary off
+%{
+\end{lstlisting}
+
+The output of running the kfold on 1000 test is detailed in the following
+output from the script above: 
+\color{lightgray}
+\VerbatimInput{output_dir/classify_stats.txt}
+\color{black}
+As can be seen above, the classifier is working very well with a classification rate of nearly 98\%. 
+
+\subsection{Fibonacci Spiral Problem}
+To continue with our experiments, we want to now perform classification on
+the fibonacci spiral. The fibonacci sprial is shown in Figure \ref{fig:fibonacci_spiral}. 
+
+\begin{matlab}
+%}
+%%
+close all;
+num_samples = 100; 
+[x1, x2, y] = fibonacci_data(num_samples, train_seed)
+fib_fig = plot_fibonacci_spirals(x1, x2); 
+title('Fibonacci Spiral')
+saveas(gcf, 'figures/fibonacci_spiral.eps', 'epsc')
+%{
+\end{matlab}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4in]{figures/fibonacci_spiral.eps}
+\caption{Plot of the Fibonacci Spiral}
+\label{fig:fibonacci_spiral} 
+\end{figure}
+
+
+\begin{lstlisting}
+%}
+
+%%
+[x1, x2, y_train] = fibonacci_data(num_samples, train_seed);
+x_train = [x1, x2];
+test_seed = rng(2); 
+[x1_test, x2_test, y_test] = fibonacci_data(1000, test_seed);
+x_test = [x1_test, x2_test];
+sigma_vals = linspace(0.01, 2, 10); 
+gamma_vals = linspace(0.001, 2, 10);
+% gamma_vals = logspace(.001, 1, 20);
+% sigma_vals = logspace(.001, 1, 20); 
+error_rates = zeros(numel(sigma_vals), numel(gamma_vals)); 
+for sig_i = 1:numel(sigma_vals)
+   for gam_i = 1:numel(gamma_vals); 
+      error_rates(sig_i, gam_i) = performance(x_train, y_train, x_test, y_test, gamma_vals(gam_i), sigma_vals(sig_i)); 
+   end
+end
+
+%%
+figure()
+imagesc(sigma_vals, gamma_vals, error_rates');
+title('Visualization of Error Rates, sigma vs cost')
+h = colorbar;
+ylabel(h, 'ErrorRate');
+xlabel('Sigma')
+ylabel('Gamma'); 
+saveas(gcf, 'figures/sigma_cost.eps', 'epsc')
+f = fopen('output_dir/min_error_rate.tex', 'w'); 
+fprintf(f, '%s', min(error_rates(:))); 
+min_mat = min(error_rates(:));
+[sig_min,cost_min] = find(error_rates==min_mat);
+fclose(f);
+%{
+\end{lstlisting}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4in]{figures/sigma_cost.eps}
+\caption{Error rates for different sigma cost combinations}
+\label{fig:sigma_cost} 
+\end{figure}
+
+Figure \ref{fig:sigma_cost} illustrates how varying different values of
+sigma and cost changes the error rate. The best error rate that was found
+using this search is \input{output_dir/min_error_rate}.
+
+To illustrate what these values mean for actually separating the data, we
+show a plot of a good sigma, cost pair and a bad one. 
+
+\begin{lstlisting}
+%}
+%%
+min_mat = min(error_rates(:));
+[sig_min,gamma_min] = find(error_rates==min_mat);
+gamma_min = gamma_vals(gamma_min);
+gamma_min = gamma_min(1); 
+sigma_min = sigma_vals(sig_min);
+sigma_min = sigma_min(1); 
+fprintf('gamma min: %f, sigma_min : %f', gamma_min, sigma_min)
+fib_fig = plot_fibonacci_spirals(x1_test, x2_test); 
+[plot_3d, contour_plot ] = plot_decision(x_train', y_train, gamma_min, sigma_min, 100, fib_fig);
+saveas(contour_plot, 'figures/contour_plot_fib.png')
+saveas(plot_3d, 'figures/plot_3d_fib.png')
+fib_fig = plot_fibonacci_spirals(x1_test, x2_test);
+[plot_3d, contour_plot ] = plot_decision(x_train', y_train, 1, 0.001, 100, fib_fig);
+saveas(contour_plot, 'figures/contour_plot_fib_complex.png')
+saveas(plot_3d, 'figures/plot_3d_fib_complex.png')
+
+%{
+\end{lstlisting}
+
+Both Figure \ref{fig:sigma_gamma_fib} and Figure \ref{fig:plot_3d_fib} are
+the optimal decisions. That is to say, that this is the best trade off
+between choosing very small values of sigma and overfitting, and choosing
+very large values of sigma and essentially just separating the points with
+a single plain. On the other hand, I chose a very low value of sigma in
+both Figures \ref{fig:sigma_gamma_fib_overfit} and Figure
+\ref{fig:plot_3d_fib_overfit} and it's clear that the hyperplane is seeing
+separations in the train data that do not exist in the testing data. 
+\begin{figure}[h]
+\centering
+\includegraphics[width=4in]{figures/contour_plot_fib.png}
+\caption{Separation of points using optimal sigma and gamma value}
+\label{fig:sigma_gamma_fib} 
+\end{figure}
+
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4in]{figures/plot_3d_fib.png}
+\caption{Separation of points in 3d}
+\label{fig:plot_3d_fib} 
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4in]{figures/contour_plot_fib_complex.png}
+\caption{Separation of points with overfitting}
+\label{fig:sigma_gamma_fib_overfit} 
+\end{figure}
+
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4in]{figures/plot_3d_fib_complex.png}
+\caption{Separation of points in 3d with overfitting}
+\label{fig:plot_3d_fib_overfit} 
+\end{figure}
+
+\section{Conclusion}
+From these experiments we can see that using kernels is a very helpful in creating a hyperplane
+in an infinite dimensional space. Even for complex sets of data such as the Fibonacci Spiral, 
+we can still have a relatively accurate separation of classes. 
+
+\bibliography{hw2.bib}
+\bibliographystyle{ieeetr}
+
+\end{document}  
+%}
+
+
