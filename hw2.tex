@@ -49,12 +49,13 @@ fclose(fid);
 \end{matlab}
 \section{Introduction} 
 By themselves, support vector machines are useful but only for the linearly separable case. There are many cases in which no single line can easily shatter the points 
-using a hyperplane. This is where the \textit{kernel trick} comes in handy. The kernel trick consists of transforming the input space into a high dimensional space in which a "linear"
-hyperplane can be drawn. This allows the \textit{xor} problem to be solved. In this lab, we will investigate how to solve the \textit{xor} problem using the kernel trick. 
+using a hyperplane. This is where the \textit{kernel trick} comes in handy. The kernel trick consists of transforming the input space into a higher dimensional space in which a "linear"
+hyperplane can be drawn. This allows the \textit{xor} problem, or any other seemingly nonlinearly separable case to be solved. In this paper, we will investigate how to solve the \textit{xor} 
+and the \textit{fibonacci spiral} problems by using kernels and support vector machines. 
 
 \section{Theory}
 Before delving into the kernel trick, it also helpful to look at what possibilities came before the kernel trick was discovered. This was known as a \textit{Volterra filter}, and this allowed
-the transformation of the input space into a polynomial function. Equation \ref{eq:volterra} illustrates what an order 3 Volterra filter.
+the transformation of the input space into a polynomial function. Equation \ref{eq:volterra} illustrates an order 3 Volterra filter \cite{volterra}.
 
 
 \begin{equation}
@@ -62,7 +63,8 @@ the transformation of the input space into a polynomial function. Equation \ref{
 \label{eq:volterra}
 \end{equation}
 
-From equation \ref{eq:volterra} we can then reformulate the problem as Equation \ref{eq:reform}.  The problem, however, with this approach is the \textit{the curse of dimensionality}.
+From Equation \ref{eq:volterra} we can then reformulate the problem as Equation \ref{eq:reform} by stating that the function $\hat{y}[n]$ is an approximation of the actual output
+given by some parameters multiplied by the input data. The problem, however, with this approach is the \textit{the curse of dimensionality}.
 
 \begin{equation}
 \hat{y}[n] = \mathbf{w}^T\mathbf{z}_n
@@ -70,7 +72,8 @@ From equation \ref{eq:volterra} we can then reformulate the problem as Equation 
 \end{equation}
 
  In the order 3 Voltera filter, we see that in order to pass from a space of dimension 2, it requries $fact(5, 3) = 10$, but if the input space is in 5 dimensions, then we end up with 56 elements needed.
- This is thus known as the curse of dimensionality. This now were the \textit{kernel trick} comes into play.  The transformation can be generalized by $\mathbf{z}_n = \mathbf{\varphi}(\mathbf{x}_n)$ 
+ This is thus known as the curse of dimensionality because when increase the number of dimensions, the number of elements begins to explode and is therefore not practical for computation
+ for higher order spaces. Luckily, we have the \textit{kernel trick} to help solve this curse. The transformation can be generalized by $\mathbf{z}_n = \mathbf{\varphi}(\mathbf{x}_n)$ 
  which in turn allows us to rewrite the estimator function as shown in Equation \ref{eq:rewrite}. 
  
  \begin{equation}
@@ -79,7 +82,8 @@ From equation \ref{eq:volterra} we can then reformulate the problem as Equation 
 \end{equation}
 
 In order to finally solve Equation \ref{eq:rewrite} we need to choose a function for $\varphi(\cdot)$, the higher dimensional Hilbert space \cite{kernelmethods}. In 
-the case of this assignment, we have chosen to use the minimum mean square error (MMSE) criterion and a Gaussian Kernel with $\sigma = 1$. The gaussian equation 
+the case of this paper, we have chosen to use the minimum mean square error (MMSE) criterion and a Gaussian Kernel with $\sigma = 1$. We know that we can choose this
+as our kernel because the only requirement is that it be a proper inner product. To state it more explicitly, a kernel function is one that satisfies Mercer's Theorem \cite{kernelmethods}. The gaussian equation 
 used is shown in Equation \ref{eq:gaus_basis}.
 
 \begin{equation}
@@ -185,14 +189,18 @@ actually implement them in software to get some experimental results.
 In the first part of this section, we want to look at how well the SVM works using
 100 data points for training, and then 1000 points for testing. We will
 then validate the methods using \textit{MATLABS}'s v-fold function. The
-second part is to then investigate the double fibanacci spairal applying
+second part is to then investigate the double fibonacci spiral applying
 the same techniques as mentioned above. For all the results generated here
 we used \input{output_dir/computer} for the system running
 \input{output_dir/matlabver}.
 \subsection{XOR problem}
-We begin this section by first plotting the xor problem to illustrate that
-there is no clear way to separate the data in a linear way. 
-\begin{lstlisting}
+We begin this section by first illustrating the \textit{xor} problem. In figure 
+\ref{fig:xor_plot}, we label one class in red, and the other class in blue. From 
+this figure, we can see that there is no obvious way to separate the data in a
+two dimensional space. But what happens if we then convert it to an N-dimensional 
+space? 
+
+\begin{matlab}
 %}
 num_train_points = 100; 
 rng('default') 
@@ -203,7 +211,7 @@ s = sprintf('Plot of XOR problem using %d points', num_train_points);
 title(s)
 saveas(xor_plot, 'figures/xor_plot.eps', 'epsc')
 %{
-\end{lstlisting}
+\end{matlab}
 
 \begin{figure}[h]
 \centering
@@ -213,11 +221,9 @@ saveas(xor_plot, 'figures/xor_plot.eps', 'epsc')
 \end{figure}
 
 \FloatBarrier
+To test this out, we must first 
 
-Now that we have our data, we can begin training our classifier using a
-radial basis kernel. 
-
-\begin{lstlisting}
+\begin{matlab}
 %}
 gamma = 2; 
 sigma = 1; 
@@ -225,10 +231,10 @@ K=kernel_matrix('rbf',x_train,x_train,sigma)+1;
 % Calculate the alphas from the dual parameters
 alpha=pinv(K+gamma*eye(size(K)))*y_train;
 %{
-\end{lstlisting}
+\end{matlab}
 
 To see how well we are doing, we can plot the separating hyperplane. 
-\begin{lstlisting}
+\begin{matlab}
 %}
 [X1,X2] = meshgrid(min(x_train(:)):.05:max(x_train(:)), ...
    min(x_train(:)):.05:max(x_train(:)));     % Costruct a grid of points for 
@@ -245,7 +251,7 @@ saveas(xor_plot, 'figures/xor_contour_plot.eps', 'epsc')
 
 
 %{
-\end{lstlisting}
+\end{matlab}
 
 \begin{figure}[h]
 \centering
@@ -259,7 +265,7 @@ and use cross validation to test its performance. In the following code
 snippet we will generate 1000 points that we will use for testing given our
 original parameters stored in $\bm{\alpha}$.
 
-\begin{lstlisting}
+\begin{matlab}
 %}
 %%
 kfold = 5; 
@@ -285,7 +291,7 @@ diary 'output_dir/classify_stats.txt'
 cp.display
 diary off
 %{
-\end{lstlisting}
+\end{matlab}
 
 The output of running the kfold on 1000 test is detailed in the following
 output from the script above: 
@@ -318,7 +324,7 @@ saveas(gcf, 'figures/fibonacci_spiral.eps', 'epsc')
 \end{figure}
 
 
-\begin{lstlisting}
+\begin{matlab}
 %}
 
 %%
@@ -327,10 +333,9 @@ x_train = [x1, x2];
 test_seed = rng(2); 
 [x1_test, x2_test, y_test] = fibonacci_data(1000, test_seed);
 x_test = [x1_test, x2_test];
-sigma_vals = linspace(0.01, 2, 10); 
-gamma_vals = linspace(0.001, 2, 10);
-% gamma_vals = logspace(.001, 1, 20);
-% sigma_vals = logspace(.001, 1, 20); 
+sigma_vals = linspace(0.0001, 1, 20); 
+gamma_vals = linspace(0.0001, 1, 20);
+
 error_rates = zeros(numel(sigma_vals), numel(gamma_vals)); 
 for sig_i = 1:numel(sigma_vals)
    for gam_i = 1:numel(gamma_vals); 
@@ -353,7 +358,7 @@ min_mat = min(error_rates(:));
 [sig_min,cost_min] = find(error_rates==min_mat);
 fclose(f);
 %{
-\end{lstlisting}
+\end{matlab}
 
 \begin{figure}[h]
 \centering
@@ -369,7 +374,7 @@ using this search is \input{output_dir/min_error_rate}.
 To illustrate what these values mean for actually separating the data, we
 show a plot of a good sigma, cost pair and a bad one. 
 
-\begin{lstlisting}
+\begin{matlab}
 %}
 %%
 min_mat = min(error_rates(:));
@@ -383,13 +388,22 @@ fib_fig = plot_fibonacci_spirals(x1_test, x2_test);
 [plot_3d, contour_plot ] = plot_decision(x_train', y_train, gamma_min, sigma_min, 100, fib_fig);
 saveas(contour_plot, 'figures/contour_plot_fib.png')
 saveas(plot_3d, 'figures/plot_3d_fib.png')
+
+bad_sig = .0001;
+bad_gam = .001;
 fib_fig = plot_fibonacci_spirals(x1_test, x2_test);
-[plot_3d, contour_plot ] = plot_decision(x_train', y_train, 1, 0.001, 100, fib_fig);
+[plot_3d, contour_plot ] = plot_decision(x_train', y_train, 1, bad_gam, bad_sig, fib_fig);
 saveas(contour_plot, 'figures/contour_plot_fib_complex.png')
 saveas(plot_3d, 'figures/plot_3d_fib_complex.png')
 
+good_test_error = performance(x_train, y_train, x_train, y_train, gamma_min, sigma_min);
+bad_test_error = performance(x_train, y_train, x_train, y_train, bad_gam, bad_sig);
+
+fprintf('Good testing error: %f\n', good_test_error)
+fprintf('Bad testing error: %f\n', bad_test_error)
+
 %{
-\end{lstlisting}
+\end{matlab}
 
 Both Figure \ref{fig:sigma_gamma_fib} and Figure \ref{fig:plot_3d_fib} are
 the optimal decisions. That is to say, that this is the best trade off
@@ -398,7 +412,19 @@ very large values of sigma and essentially just separating the points with
 a single plain. On the other hand, I chose a very low value of sigma in
 both Figures \ref{fig:sigma_gamma_fib_overfit} and Figure
 \ref{fig:plot_3d_fib_overfit} and it's clear that the hyperplane is seeing
-separations in the train data that do not exist in the testing data. 
+separations in the train data that do not exist in the testing data.  The training error
+for Figures \ref{fig:plot_3d_fib} and \ref{fig:sigma_gamma_fib} is:
+
+\color{lightgray}
+\VerbatimInput{output_dir/test_train_errors.tex}
+\color{black}
+
+This proves that even thought we can have perfect training error, the testing
+error can be much worse. This is due to a phenomenon called overfitting. In fact, 
+you can choose a sigma and a cost such that you will always be able to get 
+100\% training accuracy, but the model will not be good when faced with fitting
+the testing data. 
+
 \begin{figure}[h]
 \centering
 \includegraphics[width=4in]{figures/contour_plot_fib.png}
@@ -431,8 +457,18 @@ separations in the train data that do not exist in the testing data.
 
 \section{Conclusion}
 From these experiments we can see that using kernels is a very helpful in creating a hyperplane
-in an infinite dimensional space. Even for complex sets of data such as the Fibonacci Spiral, 
-we can still have a relatively accurate separation of classes. 
+in a higher-dimensional space than the one in which our data is represented. 
+Even for complex sets of data such as the Fibonacci Spiral, 
+we can still have an accurate separation of classes. These techniques must also be used
+with caution because if cross validation is not used, it is guaranteed that you will overfit the data. In this paper we
+ demonstrated what will 
+happen if only the testing error, or empirical risk is used to create a model using reproducing 
+kernels. We find that even though we have driven our empirical risk close to zero, the structural 
+risk will begin to to rise as a result. 
+
+Though there are limitations to using kernels in combination with support vector machines, they are very 
+good at classifying and regressing data of any distribution which makes them a powerful tool 
+for any type of classification.
 
 \bibliography{hw2.bib}
 \bibliographystyle{ieeetr}
