@@ -15,6 +15,7 @@
 \usepackage{amsmath}
 \usepackage{cite}
 \usepackage{bm}
+\usepackage{hyperref} 
 \usepackage[section]{placeins}
 \lstset{style=Matlab-editor,basicstyle=\ttfamily}
 
@@ -49,13 +50,12 @@ fclose(fid);
 %{
 \end{matlab}
 
-[
 \section{Introduction} 
 By themselves, support vector machines are useful but only for the linearly separable case. There are many cases in which no single line can easily shatter the points 
 using a hyperplane. This is where the \textit{kernel trick} comes in handy. The kernel trick consists of transforming the input space into a higher dimensional space in which a "linear"
 hyperplane can be drawn. This allows the \textit{xor} problem, or any other seemingly nonlinearly separable case to be solved. In this paper, we will investigate how to solve the \textit{xor} 
 and the \textit{fibonacci spiral} problems by using kernels and support vector machines. 
-]
+
 
 \section{Theory}
 Before delving into the kernel trick, it also helpful to look at what possibilities came before the kernel trick was discovered. This was known as a \textit{Volterra filter}, and this allowed
@@ -267,10 +267,16 @@ saveas(xor_plot, 'figures/xor_contour_plot.eps', 'epsc')
 \label{fig:xor_contour_plot} 
 \end{figure}
 
+\FloatBarrier
+
 To put the algorithm to the test now, we need try it on some testing data
-and use cross validation to test its performance. In the following code
-snippet we will generate 1000 points that we will use for testing given our
-original parameters stored in $\bm{\alpha}$.
+and use cross validation to test its performance. To do this, we generate
+1000 new points and run it through our saved parameter $\bm{\alpha}$
+ which we calculated in the training phase. The output of this operation
+ using k-fold cross validation is the following:  
+ \color{lightgray}
+\VerbatimInput{output_dir/classify_stats.txt}
+\color{black}
 
 \begin{matlab}
 %}
@@ -300,12 +306,8 @@ diary off
 %{
 \end{matlab}
 
-The output of running the kfold on 1000 test is detailed in the following
-output from the script above: 
-\color{lightgray}
-\VerbatimInput{output_dir/classify_stats.txt}
-\color{black}
-As can be seen above, the classifier is working very well with a classification rate of nearly 98\%. 
+As can be seen above in the results, the classifier is working very well with a classification rate of nearly 98\%. 
+
 
 \subsection{Fibonacci Spiral Problem}
 To continue with our experiments, we want to now perform classification on
@@ -476,6 +478,11 @@ risk will begin to to rise as a result.
 Though there are limitations to using kernels in combination with support vector machines, they are very 
 good at classifying and regressing data of any distribution which makes them a powerful tool 
 for any type of classification.
+
+All of the source code from this paper can be found at my Github site here: 
+\href{https://github.com/AcidLeroy/KernelSVM}{https://github.com/AcidLeroy/KernelSVM}
+
+
 
 \bibliography{hw2.bib}
 \bibliographystyle{ieeetr}
