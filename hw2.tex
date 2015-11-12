@@ -29,6 +29,7 @@
 %\date{}							% Activate to display a given date or no date
 
 \begin{document}
+
 \maketitle
 
 
@@ -47,11 +48,14 @@ fprintf(fid, [a.Name ' version ' a.Version]);
 fclose(fid); 
 %{
 \end{matlab}
+
+[
 \section{Introduction} 
 By themselves, support vector machines are useful but only for the linearly separable case. There are many cases in which no single line can easily shatter the points 
 using a hyperplane. This is where the \textit{kernel trick} comes in handy. The kernel trick consists of transforming the input space into a higher dimensional space in which a "linear"
 hyperplane can be drawn. This allows the \textit{xor} problem, or any other seemingly nonlinearly separable case to be solved. In this paper, we will investigate how to solve the \textit{xor} 
 and the \textit{fibonacci spiral} problems by using kernels and support vector machines. 
+]
 
 \section{Theory}
 Before delving into the kernel trick, it also helpful to look at what possibilities came before the kernel trick was discovered. This was known as a \textit{Volterra filter}, and this allowed
@@ -137,7 +141,7 @@ From here, we simply need to take the inner product of $\mathbf{\widetilde{\varp
 This then proves that in order to calculate the bias using the Hilbert space, we need to first
 build the bias into the $\varphi$ variable so that we don't have to treat the equation separately. 
 
-It is also interesting to look at why it is necessary to have $\mathbf{alpha} = (\mathbf{\widetilde{K}} - \gamma \mathbf{I})^{-1} \mathbf{y}$ 
+It is also interesting to look at why it is necessary to have $\mathbf{\alpha} = (\mathbf{\widetilde{K}} - \gamma \mathbf{I})^{-1} \mathbf{y}$ 
 instead of $\mathbf{\widetilde{K}}^{-1}\mathbf{y}$. The reason for this is that we cannot guarantee that $\mathbf{\widetilde{K}}$ is well posed. 
 For example, if there are more points than dimensions, than there are an infinite number of $\mathbf{w}$ values from which to choose. On 
 the other hand, if there are many more points than dimensions then you can be rest assured that there is noise in the generation process 
@@ -153,7 +157,7 @@ The \emph{ridge regression} corresponds to solving the following equation:
 \end{align*}
 
 Here, $\lambda$ represents the relative trade-off between the norm and the loss \cite{kernelmethods}. In order to find the minimum of this equation, 
-we need to take the derivative. 
+we need to take the derivative as shown below: 
 
 \begin{align*}
 \mathbf{X}^T\mathbf{X}\mathbf{w} + \lambda\mathbf{w} = (\mathbf{X}^T\mathbf{X} + \lambda \mathbf{I}_n)\mathbf{w} = \mathbf{X}^T\mathbf{y}
@@ -198,7 +202,10 @@ We begin this section by first illustrating the \textit{xor} problem. In figure
 \ref{fig:xor_plot}, we label one class in red, and the other class in blue. From 
 this figure, we can see that there is no obvious way to separate the data in a
 two dimensional space. But what happens if we then convert it to an N-dimensional 
-space? 
+space? Well, if we pass our data into the kernel and then compute the dot product
+between the newly computed values, we can solve for our $\alpha$ parameters. 
+From there we can then test the data on never seen before (x,y) pairs and test how 
+well our $\alpha$s worked. 
 
 \begin{matlab}
 %}
@@ -221,7 +228,6 @@ saveas(xor_plot, 'figures/xor_plot.eps', 'epsc')
 \end{figure}
 
 \FloatBarrier
-To test this out, we must first 
 
 \begin{matlab}
 %}
@@ -233,7 +239,10 @@ alpha=pinv(K+gamma*eye(size(K)))*y_train;
 %{
 \end{matlab}
 
-To see how well we are doing, we can plot the separating hyperplane. 
+Once we have done that, since this is a special two dimensional case, 
+we can take the values that we have generated, plot them in 3 dimensions
+and then draw the line that intersects with the plane $ z=0$. This is illustrated
+in Figure \ref{fig:xor_contour_plot}.
 \begin{matlab}
 %}
 [X1,X2] = meshgrid(min(x_train(:)):.05:max(x_train(:)), ...
@@ -247,8 +256,6 @@ Z=buffer(y_,size(X1,1),0);                % convert the output vector into
 contour(X1,X2,Z,[0 0],'LineWidth',2,'Color','Black')
 title('Contour plot of the hyperplane using a radial basis kernel')
 saveas(xor_plot, 'figures/xor_contour_plot.eps', 'epsc')
-
-
 
 %{
 \end{matlab}
